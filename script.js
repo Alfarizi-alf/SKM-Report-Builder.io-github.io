@@ -13,7 +13,7 @@ const loadingSpinner = document.getElementById('loading-spinner');
 const phase1 = document.getElementById('phase-1');
 const mainControlPanel = document.getElementById('main-control-panel');
 const generateAiButton = document.getElementById('generate-ai-button');
-const apiKeyInput = document.getElementById('api-key-input'); // Added for API Key
+const apiKeyInput = document.getElementById('api-key-input');
 const aiLoadingSpinner = document.getElementById('ai-loading-spinner');
 const aiResults = document.getElementById('ai-results');
 const downloadPdfButton = document.getElementById('download-pdf-button');
@@ -39,6 +39,7 @@ analisisTextarea.addEventListener('input', () => {
         updatePreview();
     }
 });
+
 kesimpulanTextarea.addEventListener('input', () => {
     if (reportData.kesimpulan !== undefined) {
         try {
@@ -47,10 +48,11 @@ kesimpulanTextarea.addEventListener('input', () => {
             reportData.kesimpulan = parsed;
         } catch (e) {
             // If parsing fails, treat it as a plain text update for the main part
+            const existingKesimpulan = reportData.kesimpulan || {};
             reportData.kesimpulan = {
                 utama: kesimpulanTextarea.value,
-                saran: reportData.kesimpulan.saran || '',
-                penutup: reportData.kesimpulan.penutup || ''
+                saran: existingKesimpulan.saran || '',
+                penutup: existingKesimpulan.penutup || ''
             };
         }
         updatePreview();
@@ -123,7 +125,6 @@ function downloadExcelTemplate() {
         ["Tren SKM Tahun 2023", 78.20],
         ["Tren SKM Tahun 2024", 80.10],
     ];
-
     const waktuPelaksanaanData = [
         ["No.", "Kegiatan", "Waktu Pelaksanaan", "Jumlah Hari Kerja"],
         [1, "Persiapan", "Januari 2025", 8],
@@ -131,19 +132,17 @@ function downloadExcelTemplate() {
         [3, "Pengolahan Data dan Analisis Hasil", "Mei 2025", 10],
         [4, "Penyusunan dan Pelaporan Hasil", "Mei-Juni 2025", 15]
     ];
-
     const dataSurveiData = [
         ["No", "Jenis Kelamin (L/P)", "Pendidikan Terakhir", "Pekerjaan", "Jenis Layanan", "U1 (Persyaratan)", "U2 (Prosedur)", "U3 (Waktu)", "U4 (Biaya)", "U5 (Produk)", "U6 (Kompetensi)", "U7 (Perilaku)", "U8 (Sarana & Prasarana)", "U9 (Pengaduan)", "Saran / Masukan (Teks)"],
         [1, "P", "S-1", "SWASTA", "Layanan KTP", 3, 2, 2, 4, 4, 3, 2, 3, 4, "Waktu pelayanan terlalu lama, harus bolak-balik."],
         [2, "L", "SLTA", "WIRAUSAHA", "Layanan KK", 4, 3, 3, 4, 4, 4, 3, 4, 4, "Petugas sudah ramah dan membantu, tapi loket perlu ditambah."],
         [3, "P", "S-2", "PNS", "Layanan Akta", 3, 2, 2, 3, 3, 3, 2, 3, 3, "Prosedur online masih agak membingungkan, perlu sosialisasi."]
     ];
-
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(infoUmumData), "Info_Umum");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(waktuPelaksanaanData), "Waktu_Pelaksanaan");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dataSurveiData), "Data_Survei_Mentah");
-    XLSX.writeFile(wb, "Template_SKM_v10_Lengkap.xlsx");
+    XLSX.writeFile(wb, "Template_SKM_Lengkap.xlsx");
 }
 
 /**
@@ -313,7 +312,6 @@ async function generateAIAnalysis() {
         return;
     }
 
-    // PERBAIKAN: Mengambil API Key dari input pengguna
     const apiKey = apiKeyInput.value;
     if (!apiKey) {
         showModal("Silakan masukkan Gemini API Key Anda terlebih dahulu.");
@@ -613,7 +611,7 @@ function getFullReportHTML() {
     const eduOrder = ['SD KE BAWAH', 'SLTP', 'SLTA', 'D-III', 'S-1', 'S-2', 'S-3'];
     const workOrder = ['PNS', 'TNI', 'SWASTA', 'WIRAUSAHA', 'LAINNYA'];
 
-    demoTable += buildCharacteristicRows(1, 'JENIS KELAMIN', demographics.gender);
+    demoTable += buildCharacteristicRows(1, 'JENIS KELAMIN', demographics.gender, ['L', 'P']);
     demoTable += buildCharacteristicRows(2, 'PENDIDIKAN', demographics.education, eduOrder);
     demoTable += buildCharacteristicRows(3, 'PEKERJAAN', demographics.work, workOrder);
     demoTable += buildCharacteristicRows(4, 'JENIS LAYANAN', demographics.service);
@@ -907,7 +905,7 @@ async function generatePdf() {
                 page-break-inside: avoid !important;
             }
             table.report-table th, table.report-table td {
-                border: 1px solid black !important; /* Memastikan border selalu ada */
+                border: 1px solid black !important;
             }
             .no-border-table td, .no-border-table th, .toc-table td, .toc-table th {
                 border: none !important;
@@ -928,8 +926,9 @@ async function generatePdf() {
         </html>
     `;
 
+    // ** KODE YANG DIPERBAIKI ADA DI SINI **
     const options = {
-        margin: [2.5, 2.0, 2.5, 2.5],
+        margin: [2.5, 2.0, 2.5, 2.5], // [top, left, bottom, right] in cm
         filename: `Laporan_SKM_${reportData.info['Nama Dinas/Badan'] || 'Instansi'}_final.pdf`,
         pagebreak: {
             mode: ['css', 'legacy']
@@ -957,6 +956,3 @@ async function generatePdf() {
         showModal('Terjadi kesalahan saat membuat PDF: ' + error.message);
     });
 }
-    </script>
-</body>
-</html>
